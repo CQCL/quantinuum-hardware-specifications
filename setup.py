@@ -18,16 +18,15 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 requirements = [
-    'qiskit==0.30.1',
-    'numpy==1.20.1',
-    'scipy==1.6.1',
-    'matplotlib==3.5.1',
-    'pandas==1.2.3'
+    'numpy>=1.20.1',
+    'scipy>=1.6.1',
+    'matplotlib>=3.5.1',
+    'pandas>=1.2.3'
 ]
 
 setuptools.setup(
     name="qtm_spec",
-    version='0.1.0',
+    version='0.1.1',
     author="Quantinuum",
     author_email="charlie.baldwin@quantinuum.com",
     license="Apache 2.0",
