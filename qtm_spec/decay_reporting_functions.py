@@ -16,7 +16,7 @@
 
 import pandas as pd
 import numpy as np
-from scipy.stats import sem
+from qtm_spec.util import avg_uncertainty
 import matplotlib.pyplot as plt
 
 from .decay_analysis_functions import bright_state_population, convert_metrics
@@ -121,10 +121,10 @@ def report(fid_info: dict,
     result.loc['Mean'] = result.mean()
 
     # change uncertainties to geometric means
-    result['Decay intercept uncertainty']['Mean'] = sem(
+    result['Decay intercept uncertainty']['Mean'] = avg_uncertainty(
         result['Decay intercept uncertainty'].head(len(result['Decay intercept uncertainty']) - 1).to_list()
     )
-    result['Avg. infidelity uncertainty']['Mean'] = sem(
+    result['Avg. infidelity uncertainty']['Mean'] = avg_uncertainty(
         result['Avg. infidelity uncertainty'].head(len(result['Avg. infidelity uncertainty']) - 1).to_list()
     )
 

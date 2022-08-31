@@ -16,10 +16,8 @@
 
 import pandas as pd
 import numpy as np
-from scipy.stats import sem
-import matplotlib.pyplot as plt
+from qtm_spec.util import avg_uncertainty
 
-from .decay_analysis_functions import bright_state_population, convert_metrics
 from .loading_functions import load_data
 from .zone_names import *
 
@@ -75,7 +73,7 @@ def report(data_dir: str,
     result.loc['Mean'] = result.mean()
 
     # change uncertainties to geometric means
-    result['Avg. SPAM error uncertainty']['Mean'] = sem(
+    result['Avg. SPAM error uncertainty']['Mean'] = avg_uncertainty(
         result['Avg. SPAM error uncertainty'].head(len(result['Avg. SPAM error uncertainty']) - 1).to_list()
     )
 
