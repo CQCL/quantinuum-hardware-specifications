@@ -16,6 +16,7 @@
 
 import pandas as pd
 import numpy as np
+from qtm_spec.util import avg_uncertainty
 from scipy.stats import sem
 import matplotlib.pyplot as plt
 
@@ -85,6 +86,7 @@ def errorbar_plot(fid_info: dict,
     ax.legend(legend)
     if log_scale:
         ax.set_xscale("log")
+        
 
 
 def report(fid_info: dict, 
@@ -123,10 +125,10 @@ def report(fid_info: dict,
     result.loc['Mean'] = result.mean()
 
     # change uncertainties to standard error in means
-    result['RB intercept uncertainty']['Mean'] = sem(
+    result['RB intercept uncertainty']['Mean'] = avg_uncertainty(
         result['RB intercept uncertainty'].head(len(result['RB intercept uncertainty']) - 1).to_list()
     )
-    result['Avg. infidelity uncertainty']['Mean'] = sem(
+    result['Avg. infidelity uncertainty']['Mean'] = avg_uncertainty(
         result['Avg. infidelity uncertainty'].head(len(result['Avg. infidelity uncertainty']) - 1).to_list()
     )
     result['Avg. infidelity'] = result['Avg. infidelity'].map(lambda x: 1 - x)
