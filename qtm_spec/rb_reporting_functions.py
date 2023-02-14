@@ -26,7 +26,9 @@ from .zone_names import *
 def errorbar_plot(fid_info: dict,
                   data: dict,
                   machine: str,
-                  log_scale=False):
+                  data_type='survival',
+                  log_scale=False,
+                  savename=None):
     ''' Plot survival probability and fitting. '''
 
     if len(fid_info) > 10:
@@ -42,19 +44,24 @@ def errorbar_plot(fid_info: dict,
     legend = []
     for i, (q, metric_params) in enumerate(fid_info.items()):
         nqubits = len(q.split(', '))
-        A, r = convert_metrics(metric_params, nqubits)
+        if data_type == 'survival':
+            asympt = 1/2**nqubits
+        else:
+            asympt = 0
+
+        A, r = convert_metrics(metric_params, nqubits, data_type)
         survival_fit = exponential_with_asymptote(
             xrange,
             A,
             r,
-            1/2**nqubits
+            asympt
         )
         ax.plot(xrange, survival_fit, "-", color=color_list[i])
 
         for length in xvals:
             surv = [
                 val/data['shots']
-                for val in data['survival'][q][str(length)].values()
+                for val in data[data_type][q][str(length)].values()
             ]
             ax.errorbar(
                 length,
@@ -86,13 +93,23 @@ def errorbar_plot(fid_info: dict,
     ax.legend(legend)
     if log_scale:
         ax.set_xscale("log")
-        
+
+    if savename:
+        fig.savefig(savename + '.pdf', format='pdf')
 
 
 def report(fid_info: dict, 
            boot_info: dict,
-           machine: str):
+           machine: str,
+           data_type: str = 'survival'):
     ''' Returns DataFrame containing summary of results. '''
+
+    if data_type == 'survival':
+        column0 = 'RB Intercept'
+        column1 = 'Avg. infidelity'
+    elif data_type == 'leakage_postselect':
+        column0 = 'Intercept'
+        column1 = 'Spont. emit rate'
 
     if machine == 'H1-1':
         try:
@@ -108,12 +125,12 @@ def report(fid_info: dict,
             pass
 
     df1 = pd.DataFrame.from_dict(fid_info).transpose()
-    df1.rename(columns={0: 'RB intercept', 1: 'Avg. infidelity'}, inplace=True)
+    df1.rename(columns={0: column0, 1: column1}, inplace=True)
 
     boot_new = {
         qname: {
-            'RB intercept uncertainty': (qvals['SPAM upper'] - qvals['SPAM lower'])/2,
-            'Avg. infidelity uncertainty': (qvals['Avg. fidelity upper'] - qvals['Avg. fidelity lower'])/2
+            f'{column0} uncertainty': (qvals['intercept upper'] - qvals['intercept lower'])/2,
+            f'{column1} uncertainty': (qvals['rate upper'] - qvals['rate lower'])/2
         }
         for qname, qvals in boot_info.items()
     }
@@ -121,18 +138,18 @@ def report(fid_info: dict,
     
     result = pd.concat([df1, df2], axis=1).reindex(df1.index)
     result.rename(columns={result.columns[0]: 'Qubits'})
-    result = result[['Avg. infidelity', 'Avg. infidelity uncertainty', 'RB intercept', 'RB intercept uncertainty']]
+    result = result[[column1, f'{column1} uncertainty', column0, f'{column0} uncertainty']]
     result.loc['Mean'] = result.mean()
 
     # change uncertainties to standard error in means
-    result['RB intercept uncertainty']['Mean'] = avg_uncertainty(
-        result['RB intercept uncertainty'].head(len(result['RB intercept uncertainty']) - 1).to_list()
+    result[f'{column0} uncertainty']['Mean'] = avg_uncertainty(
+        result[f'{column0} uncertainty'].head(len(result[f'{column0} uncertainty']) - 1).to_list()
     )
-    result['Avg. infidelity uncertainty']['Mean'] = avg_uncertainty(
-        result['Avg. infidelity uncertainty'].head(len(result['Avg. infidelity uncertainty']) - 1).to_list()
+    result[f'{column1} uncertainty']['Mean'] = avg_uncertainty(
+        result[f'{column1} uncertainty'].head(len(result[f'{column1} uncertainty']) - 1).to_list()
     )
-    result['Avg. infidelity'] = result['Avg. infidelity'].map(lambda x: 1 - x)
+    result[column1] = result[column1].map(lambda x: 1 - x)
     pd.set_option('display.float_format', lambda x: '%.3E' % x)
-    result['RB intercept'] = result['RB intercept'].map(lambda x: 1 - x)
+    result[column0] = result[column0].map(lambda x: 1 - x)
 
     return result
