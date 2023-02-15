@@ -85,3 +85,24 @@ def report(data_dir: str,
     result = result[['Avg. SPAM error', 'Avg. SPAM error uncertainty', '0 SPAM error', '1 SPAM error']]
 
     return result
+
+def spam_combined(data_dir: str,
+                  machine: str,
+                  date: str,
+                  experiment: str):
+
+    data = load_data(data_dir, machine, date, experiment)
+    spam_results = data['survival']
+
+    nqubits = len(spam_results)
+    res = {i: 
+        sum(
+            spam_results[q][i]/data['shots']/nqubits
+            for q in spam_results
+        )
+        for i in ['0', '1']
+    }
+    fid = (res['0'] + res['1'])/2
+    unc = np.sqrt(res['0']*(1 - res['0']) + res['1']*(1 - res['1']))/2/np.sqrt(data['shots']*nqubits)
+ 
+    return 1 - fid, unc

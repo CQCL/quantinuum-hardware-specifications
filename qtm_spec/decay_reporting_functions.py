@@ -19,7 +19,9 @@ import numpy as np
 from qtm_spec.util import avg_uncertainty
 import matplotlib.pyplot as plt
 
-from .decay_analysis_functions import bright_state_population, convert_metrics
+from .decay_analysis_functions import (
+    measurement_crosstalk, reset_crosstalk, convert_metrics
+)
 from .loading_functions import load_data
 from .zone_names import *
 
@@ -29,7 +31,8 @@ def errorbar_plot(fid_info: dict,
                   machine: str,
                   date: str,
                   decay_type: str,
-                  log_scale=False):
+                  log_scale=False,
+                  savename=None):
     ''' Plot bright state population and fitting. '''
 
     data = load_data(data_dir, machine, date, decay_type)
@@ -47,8 +50,11 @@ def errorbar_plot(fid_info: dict,
         xvals = [int(l) for l in data['survival'][q]]
         xrange = np.arange(np.min(xvals), np.max(xvals)+1)
 
-        fit = convert_metrics(fid_info[q])
-        survival_fit = bright_state_population(xrange, *fit)
+        fit = convert_metrics(fid_info[q], decay_type)
+        if decay_type == 'Measurement_crosstalk':
+            survival_fit = measurement_crosstalk(xrange, *fit)
+        elif decay_type == 'Reset_crosstalk':
+            survival_fit = reset_crosstalk(xrange, *fit)
         ax.plot(xrange, survival_fit, "-", color=color_list[c])
 
         for length in xvals:
@@ -85,10 +91,14 @@ def errorbar_plot(fid_info: dict,
     if log_scale:
         ax.set_xscale("log")
 
+    if savename:
+        fig.savefig(savename + '.pdf', format='pdf')
+
 
 def report(fid_info: dict, 
            boot_info: dict,
-           machine: str):
+           machine: str,
+           decay_type: str):
     ''' Returns DataFrame containing summary of results. '''
 
     if machine == 'H1-1':
@@ -127,9 +137,6 @@ def report(fid_info: dict,
     result['Avg. infidelity uncertainty']['Mean'] = avg_uncertainty(
         result['Avg. infidelity uncertainty'].head(len(result['Avg. infidelity uncertainty']) - 1).to_list()
     )
-
-    result['Avg. infidelity'] = result['Avg. infidelity'].map(lambda x: 1 - x)
     pd.set_option('display.float_format', lambda x: '%.3E' % x)
-    result['Decay intercept'] = result['Decay intercept'].map(lambda x: 1 - x)
 
     return result

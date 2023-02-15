@@ -21,7 +21,8 @@ requirements = [
     'numpy>=1.20.1',
     'scipy>=1.6.1',
     'matplotlib>=3.5.1',
-    'pandas>=1.2.3'
+    'pandas>=1.2.3',
+    'openpyxl>=3.0.9'
 ]
 
 setuptools.setup(

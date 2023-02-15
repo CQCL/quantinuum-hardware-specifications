@@ -26,58 +26,115 @@ from .loading_functions import load_data
 def rb_analysis(data_dir: str,
                 machine: str, 
                 date: str, 
-                rb_type: str):
+                rb_type: str,
+                data_type: str = 'survival'):
     ''' Analyze RB data and return DataFrame of results. '''
 
     data = load_data(data_dir, machine, date, rb_type)
 
     fit_info = {}
     boot_info = {}
-    for q in data['survival']:
-        xvals = list(data['survival'][q].keys())
+    for q in data[data_type]:
+        xvals = list(data[data_type][q].keys())
         yvals = [
             np.mean(list(vals.values()))/data['shots']
-            for vals in data['survival'][q].values()
+            for vals in data[data_type][q].values()
         ]
         fit_info[q] = expoential_fit(
             xvals, 
             yvals,
-            len(q.split(','))
+            len(q.split(',')),
+            data_type=data_type
         )
         boot_info[q] = bootstrap(
-            data['survival'][q], 
+            data[data_type][q], 
             data['shots'], 
-            len(q.split('-'))
+            len(q.split(',')),
+            data_type=data_type
         )
+
     return fit_info, boot_info
+
+
+def rb_analysis_combined(data_dir: str,
+                         machine: str, 
+                         date: str, 
+                         rb_type: str,
+                         data_type: str = 'survival'):
+    ''' Analyze RB data combined for all qubits. '''
+
+    data = load_data(data_dir, machine, date, rb_type)
+
+    fit_info = {}
+    boot_info = {}
+    qlist = list(data[data_type].keys())
+    xvals = list(data[data_type][qlist[0]])
+    ylist = {}
+    for x in xvals:
+        i = 0
+        ylist[x] = {}
+        for q in qlist:
+            for val in data[data_type][q][x].values():
+                ylist[x][str(i)] = val
+                i += 1
+
+    yvals = [
+        np.mean(list(vals.values()))/data['shots']
+        for vals in ylist.values()
+    ]
+    fit_info = expoential_fit(
+        xvals, 
+        yvals,
+        len(qlist[0].split(',')),
+        data_type=data_type
+    )
+    boot_info = bootstrap(
+        ylist, 
+        data['shots'], 
+        len(qlist[0].split(',')),
+        data_type=data_type
+    )
+    return 1 - fit_info[1], (boot_info['rate upper'] - boot_info['rate lower'])/2
 
 
 def expoential_fit(seq_lengths: list,
                    survival_means: list,
                    nqubits: int,
-                   initial_guess: Optional[list] = None):
+                   initial_guess: Optional[list] = None,
+                   data_type: str = 'survival'):
     ''' Fits survival to exponential decay with asymoptote. '''
 
-    if not initial_guess:
-        initial_guess = [1 - 1/2**nqubits, 0.99]
-
-    fit_function = lambda x, A, r: exponential_with_asymptote(x, A, r, 1/2**nqubits)
-
+    if data_type == 'survival':
+        asympt =  1/2**nqubits
+        if not initial_guess:
+            initial_guess = [1 - 1/2**nqubits, 0.99]
+    elif data_type == 'leakage_postselect':
+        asympt = 0
+        if not initial_guess:
+            initial_guess = [1, 0.99]
+    fit_function = lambda x, A, r: exponential_with_asymptote(x, A, r, asympt)
+    bounds = [
+        tuple([0]*len(initial_guess)),
+        tuple([1]*len(initial_guess))
+    ]
     fit_res = curve_fit(
         fit_function,
         seq_lengths,
         survival_means,
         initial_guess,
+        bounds=bounds
     )
     metrics = convert_params(
         fit_res[0],
-        nqubits
+        nqubits,
+        data_type
     )
     return metrics
 
 
 def convert_params(fit_params,
-                   nqubits):
+                   nqubits,
+                   data_type: str = 'survival'):
     ''' Convert to standard metrics. '''
 
     if nqubits == 2:
@@ -85,15 +142,22 @@ def convert_params(fit_params,
     else:
         ntq = 1
 
-    out = [
-        fit_params[0] + 1/2**nqubits,
-        ((2**nqubits - 1) * fit_params[1] ** (1 / ntq) + 1)/2**nqubits
-    ]
+    if data_type == 'survival':
+        out = [
+            fit_params[0] + 1/2**nqubits,
+            ((2**nqubits - 1) * fit_params[1] ** (1 / ntq) + 1)/2**nqubits
+        ]
+    elif data_type == 'leakage_postselect':
+        out = [
+            fit_params[0],
+            1 - 2*(1 - fit_params[1])/ntq,
+        ]
     return out
 
 
 def convert_metrics(metrics_params,
-                    nqubits):
+                    nqubits,
+                    data_type: str = 'survival'):
     ''' Convert to standard metrics. '''
 
     if nqubits == 2:
@@ -101,10 +165,16 @@ def convert_metrics(metrics_params,
     else:
         ntq = 1
 
-    out = [
-        metrics_params[0] - 1/2**nqubits,
-        ((2**nqubits * metrics_params[1] - 1)/(2**nqubits - 1))**ntq
-    ]
+    if data_type == 'survival':
+        out = [
+            metrics_params[0] - 1/2**nqubits,
+            ((2**nqubits * metrics_params[1] - 1)/(2**nqubits - 1))**ntq
+        ]
+    elif data_type == 'leakage_postselect':
+        out = [
+            metrics_params[0],
+            1 - ntq*(1 - metrics_params[1])/2
+        ]
     return out
 
 
@@ -122,15 +192,13 @@ def exponential_with_asymptote(seq_len: list,
 def bootstrap(survival,
               shots,
               nqubits,
-              resamples: int = 1000):
+              resamples: int = 1000,
+              data_type: str = 'survival'):
     ''' Semi-parameteric bootstrap RB data. '''
 
     xvals = [int(m) for m in survival]
     reps = len(survival[str(xvals[0])])
-    boot_sample = {
-        'SPAM': [],
-        'Avg. fidelity': []
-    }
+    boot_sample = {'intercept': [], 'rate': []}
     for _ in range(resamples):
         resampled_reps = np.random.choice(
             np.arange(reps),
@@ -155,10 +223,11 @@ def bootstrap(survival,
         metrics = expoential_fit(
             xvals, 
             yvals,
-            nqubits
+            nqubits,
+            data_type=data_type
         )
-        boot_sample['SPAM'].append(metrics[0])
-        boot_sample['Avg. fidelity'].append(metrics[1])
+        boot_sample['intercept'].append(metrics[0])
+        boot_sample['rate'].append(metrics[1])
 
     thresh = 1/2 + erf(1/np.sqrt(2))/2
     uncertainty = {}
@@ -169,4 +238,5 @@ def bootstrap(survival,
         uncertainty[param + ' upper'] = (
             2*np.mean(vals) - np.quantile(vals, 1-thresh)
         )
+
     return uncertainty

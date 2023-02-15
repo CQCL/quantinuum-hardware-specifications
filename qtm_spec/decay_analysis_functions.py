@@ -40,58 +40,122 @@ def decay_analysis(data_dir: str,
         fit_info[q] = decay_fit(
             xvals, 
             yvals,
+            decay_type=decay_type
         )
         boot_info[q] = bootstrap(
             data['survival'][q], 
             data['shots'], 
+            decay_type=decay_type
         )
     return fit_info, boot_info
 
 
+def decay_analysis_combined(data_dir: str,
+                            machine: str, 
+                            date: str, 
+                            decay_type: str):
+    ''' Analyze RB data combined for all qubits. '''
+
+    data = load_data(data_dir, machine, date, decay_type)
+
+    fit_info = {}
+    boot_info = {}
+    qlist = list(data['survival'].keys())
+    xvals = list(data['survival'][qlist[0]])
+    ylist = {}
+    for x in xvals:
+        ylist[x] = 0
+        for q in qlist:
+            ylist[x] += data['survival'][q][x]
+
+    yvals = [
+        val/data['shots']/len(qlist)
+        for val in ylist.values()
+    ]
+    fit_info = decay_fit(
+        xvals, 
+        yvals,
+        decay_type
+    )
+    boot_info = bootstrap(
+        ylist, 
+        data['shots']*len(qlist), 
+        decay_type
+    )
+    return fit_info[1], (boot_info['Avg. fidelity upper'] - boot_info['Avg. fidelity lower'])/2
+
+
 def decay_fit(xvals: list,
-              yvals: list):
+              yvals: list,
+              decay_type: str):
     ''' Fit data to theoretical bright state population to get rate. '''
 
+    if decay_type == 'Measurement_crosstalk':
+        func = measurement_crosstalk
+    elif decay_type == 'Reset_crosstalk':
+        func = reset_crosstalk
+
     fit = curve_fit(
-        bright_state_population,
+        func,
         xvals,
         yvals,
-        p0=[1, 0.001]
+        p0=[0.02, 1e-5],
+        bounds = [
+            (0, 0),
+            (1, 1)
+        ]
     )
-    metrics = convert_params(fit[0])
+    metrics = convert_params(fit[0], decay_type)
 
     return metrics
 
 
-def convert_params(fit_param):
+def convert_params(fit_param, decay_type):
     ''' Convert to standard metrics. '''
 
-    out = [
-        fit_param[0],
-        1 - 5*fit_param[1]/6
-    ]
+    if decay_type == 'Measurement_crosstalk':
+        out = [
+            fit_param[0],
+            5*fit_param[1]/6
+        ]
+    elif decay_type == 'Reset_crosstalk':
+        out = [
+            fit_param[0],
+            5*fit_param[1]/3
+        ]
     return out
 
 
-def convert_metrics(metrics_param):
+def convert_metrics(metrics_param, decay_type):
     ''' Convert to estimated fits. '''
     
-    out = [
-        metrics_param[0],
-        6*(1 - metrics_param[1])/5
-    ]
+    if decay_type == 'Measurement_crosstalk':
+        out = [
+            metrics_param[0],
+            6*metrics_param[1]/5
+        ]
+    elif decay_type == 'Reset_crosstalk':
+        out = [
+            metrics_param[0],
+            3*metrics_param[1]/5
+        ]
 
     return out
 
-def bright_state_population(m: int, spam:float, gamma: float):
-    ''' Decay function for bright state population with measurement crosstalk. '''
-    
-    #return (2/3)*(1/2 + np.exp(-3*gamma*m))
-    return (1/3) * (2 - spam + np.exp(-3*gamma*m)*(-2 + 4 * spam))
+def measurement_crosstalk(m: int, spam:float, gamma: float):
+    ''' Decay function for bright state population with measurement errors. '''
+
+    return (1/3)*(1 + spam + np.exp(-3*gamma*m)*(2 - 4*spam))
+
+def reset_crosstalk(m: int, spam: float, gamma: float):
+    ''' Decay function for bright state population with reset errors. '''
+
+    return spam + (1/3)*np.exp(-5*gamma*m)*(2 + np.exp(3*gamma*m))*(1 - 2*spam)
 
 
 def bootstrap(survival: dict,
               shots: int, 
+              decay_type: str,
               resamples: int = 1000):
     ''' Parametric bootstrap resample for bright state decay. '''
 
@@ -104,7 +168,7 @@ def bootstrap(survival: dict,
             size=[resamples, len(yvals)]
     )/shots
     boot_sample = np.array([
-        decay_fit(xvals, resample[r, :])
+        decay_fit(xvals, resample[r, :], decay_type)
         for r in range(resamples)
     ])
     thresh = 1/2 + erf(1/np.sqrt(2))/2
