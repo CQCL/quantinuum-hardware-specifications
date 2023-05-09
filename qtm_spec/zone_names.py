@@ -1,4 +1,4 @@
-# Copyright 2022 Quantinuum (www.quantinuum.com)
+# Copyright 2023 Quantinuum (www.quantinuum.com)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,3 +42,18 @@ zone_labels_2 = {
     '4': 'G4-left',
     '5': 'G4-right',
 }
+zone_labels_3 = {
+    '0, 1': 'DG01',
+    '2, 3': 'DG02',
+    '4, 5': 'DG03',
+    '6, 7': 'DG04',
+    '0': 'DG01-left',
+    '1': 'DG01-right',
+    '2': 'DG02-left',
+    '3': 'DG02-right',
+    '4': 'DG03-left',
+    '5': 'DG03-right',
+    '6': 'DG04-left',
+    '7': 'DG04-right',
+}
+

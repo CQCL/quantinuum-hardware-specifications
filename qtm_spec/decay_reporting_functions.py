@@ -1,4 +1,4 @@
-# Copyright 2022 Quantinuum (www.quantinuum.com)
+# Copyright 2023 Quantinuum (www.quantinuum.com)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -82,9 +82,14 @@ def errorbar_plot(fid_info: dict,
             legend = [zone_labels_1[key] for key in legend]
         except KeyError:
             pass
-    if machine == 'H1-2':
+    elif machine == 'H1-2':
         try:
-            legend = [zone_labels_1[key] for key in legend]
+            legend = [zone_labels_2[key] for key in legend]
+        except KeyError:
+            pass
+    elif machine == 'H2-1':
+        try:
+            legend = [zone_labels_3[key] for key in legend]
         except KeyError:
             pass
     ax.legend(legend)
@@ -107,10 +112,16 @@ def report(fid_info: dict,
             boot_info = {zone_labels_1[key]: fid for key, fid in boot_info.items()}
         except KeyError:
             pass
-    if machine == 'H1-2':
+    elif machine == 'H1-2':
         try:
             fid_info = {zone_labels_2[key]: fid for key, fid in fid_info.items()}
             boot_info = {zone_labels_2[key]: fid for key, fid in boot_info.items()}
+        except KeyError:
+            pass
+    elif machine == 'H2-1':
+        try:
+            fid_info = {zone_labels_3[key]: fid for key, fid in fid_info.items()}
+            boot_info = {zone_labels_3[key]: fid for key, fid in boot_info.items()}
         except KeyError:
             pass
 
