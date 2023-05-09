@@ -1,4 +1,4 @@
-# Copyright 2022 Quantinuum (www.quantinuum.com)
+# Copyright 2023 Quantinuum (www.quantinuum.com)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ def report(data_dir: str,
 
     data = load_data(data_dir, machine, date, experiment)
     spam_results = data['survival']
-
     if machine == 'H1-1':
         try:
             spam_results = {
@@ -43,7 +42,7 @@ def report(data_dir: str,
 
         except KeyError:
             pass
-    if machine == 'H1-2':
+    elif machine == 'H1-2':
         try:
             spam_results = {
                 zone_labels_2[key]: {
@@ -52,7 +51,17 @@ def report(data_dir: str,
                 }
                 for key, fid in spam_results.items()
             }
-
+        except KeyError:
+            pass
+    elif machine == 'H2-1':
+        try:
+            spam_results = {
+                zone_labels_3[key]: {
+                    s: f/data['shots'] 
+                    for s, f in fid.items()
+                }
+                for key, fid in spam_results.items()
+            }
         except KeyError:
             pass
 
