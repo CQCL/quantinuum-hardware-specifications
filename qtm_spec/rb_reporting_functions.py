@@ -26,6 +26,7 @@ from .zone_names import *
 def errorbar_plot(fid_info: dict,
                   data: dict,
                   machine: str,
+                  date: str,
                   data_type='survival',
                   log_scale=False,
                   savename=None):
@@ -76,11 +77,11 @@ def errorbar_plot(fid_info: dict,
             )
         legend.append(str(q))
 
-    ax.grid(b=True, axis="both", linestyle="--")
+    ax.grid(True, axis="both", linestyle="--")
     ax.set_xlabel("Sequence length (number of Cliffords)")
     ax.set_ylabel("Avg. Survival")
 
-    if machine == 'H1-1':
+    if machine == 'H1-1' or (machine == 'H1-2' and int(date.split('_')[0]) > 2022):
         try:
             legend = [zone_labels_1[key] for key in legend]
         except KeyError:
