@@ -73,11 +73,11 @@ def errorbar_plot(fid_info: dict,
         legend.append(str(q))
         c += 1
 
-    ax.grid(b=True, axis="both", linestyle="--")
+    ax.grid(True, axis="both", linestyle="--")
     ax.set_xlabel("Sequence length (number of measurements)")
     ax.set_ylabel("Success counts")
 
-    if machine == 'H1-1':
+    if machine == 'H1-1' or (machine == 'H1-2' and int(date.split('_')[0]) > 2022):
         try:
             legend = [zone_labels_1[key] for key in legend]
         except KeyError:
