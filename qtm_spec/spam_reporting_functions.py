@@ -71,7 +71,9 @@ def report(data_dir: str,
     avg = {
         q: {
             'Avg. SPAM error': (res['0'] + res['1'])/2,
-            'Avg. SPAM error uncertainty': np.sqrt(res['0']*(1 - res['0']) + res['1']*(1 - res['1']))/2/np.sqrt(data['shots'])
+            'Avg. SPAM error uncertainty': np.sqrt(res['0']*(1 - res['0']) + res['1']*(1 - res['1']))/2/np.sqrt(data['shots']),
+            '0 SPAM error uncertainty': np.sqrt(res['0']*(1 - res['0']))/np.sqrt(data['shots']),
+            '1 SPAM error uncertainty': np.sqrt(res['1']*(1 - res['1']))/np.sqrt(data['shots'])
         }
         for q, res in spam_results.items()
     }
@@ -88,10 +90,16 @@ def report(data_dir: str,
 
     result['Avg. SPAM error'] = result['Avg. SPAM error'].map(lambda x: 1 - x)
     result['0 SPAM error'] = result['0 SPAM error'].map(lambda x: 1 - x)
+    result['0 SPAM error uncertainty']['Mean'] = avg_uncertainty(
+        result['0 SPAM error uncertainty'].head(len(result['0 SPAM error uncertainty']) - 1).to_list()
+    )
     result['1 SPAM error'] = result['1 SPAM error'].map(lambda x: 1 - x)
+    result['1 SPAM error uncertainty']['Mean'] = avg_uncertainty(
+        result['1 SPAM error uncertainty'].head(len(result['1 SPAM error uncertainty']) - 1).to_list()
+    )
     pd.set_option('display.float_format', lambda x: '%.3E' % x)
 
-    result = result[['Avg. SPAM error', 'Avg. SPAM error uncertainty', '0 SPAM error', '1 SPAM error']]
+    result = result[['Avg. SPAM error', 'Avg. SPAM error uncertainty', '0 SPAM error', '0 SPAM error uncertainty', '1 SPAM error', '1 SPAM error uncertainty']]
 
     return result
 
