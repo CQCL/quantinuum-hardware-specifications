@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import pandas as pd
+from uncertainties import ufloat
+
 from qtm_spec.decay_analysis_functions import decay_analysis_combined
 
 from qtm_spec.rb_analysis_functions import rb_analysis_combined
@@ -35,42 +37,43 @@ def combined_report(data_dir: str, machine: str, date: str, test_list: list):
 
     df = {}
     for test in test_list:
-        df[renamed[test]] = [None, None]
         if 'RB' in test:
-            df[renamed[test]][0], df[renamed[test]][1] = rb_analysis_combined(
+            val, unc = rb_analysis_combined(
                 data_dir, 
                 machine, 
                 date, 
                 test
             )
             try:
-                tmp0, tmp1 = rb_analysis_combined(
+                val_se, unc_se = rb_analysis_combined(
                     data_dir, 
                     machine, 
                     date, 
                     test, 
                     'leakage_postselect'
                 )
-                df[renamed[test+'_SE']] = [tmp0, tmp1]
+                df[renamed[test+'_SE']] = ['{:.1uePS}'.format(ufloat(val_se, unc_se))]
+
             except KeyError:
                 pass
         elif test =='Measurement_crosstalk' or test == 'Reset_crosstalk':
-            df[renamed[test]][0], df[renamed[test]][1] = decay_analysis_combined(
+            val, unc = decay_analysis_combined(
                 data_dir, 
                 machine, 
                 date, 
                 test
             )
         elif test == 'SPAM':
-            df[renamed[test]][0], df[renamed[test]][1] = spam_combined(
+            val, unc = spam_combined(
                 data_dir, 
                 machine, 
                 date, 
                 test
             )
+        df[renamed[test]] = ['{:.1uePS}'.format(ufloat(val, unc))]
 
     result = pd.DataFrame.from_dict(df).transpose()
-    result.rename(columns={0: 'Magnitude', 1: 'Uncertainty'}, inplace=True)
-    pd.set_option('display.float_format', lambda x: '%.3E' % x)
+    result.rename(columns={0: 'Error magnitude'}, inplace=True)
+    # pd.set_option('display.float_format', lambda x: '%.3E' % x)
 
     return result
