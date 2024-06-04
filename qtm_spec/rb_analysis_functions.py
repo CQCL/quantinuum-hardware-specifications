@@ -1,4 +1,4 @@
-# # Copyright 2023 Quantinuum (www.quantinuum.com)
+# # Copyright 2024 Quantinuum (www.quantinuum.com)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -77,7 +77,6 @@ def rb_analysis_combined(data_dir: str,
             for val in data[data_type][q][x].values():
                 ylist[x][str(i)] = val
                 i += 1
-
     yvals = [
         np.mean(list(vals.values()))/data['shots']
         for vals in ylist.values()

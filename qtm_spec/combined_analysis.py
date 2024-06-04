@@ -1,4 +1,4 @@
-# Copyright 2023 Quantinuum (www.quantinuum.com)
+# Copyright 2024 Quantinuum (www.quantinuum.com)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ from qtm_spec.spam_reporting_functions import spam_combined
 
 
 def combined_report(data_dir: str, machine: str, date: str, test_list: list):
-    ''' Report estimates from all methods. '''
+    ''' Make table of estimates from all methods. '''
 
     renamed = {
         'SQ_RB': 'Single-qubit gate error',
@@ -31,9 +31,71 @@ def combined_report(data_dir: str, machine: str, date: str, test_list: list):
         'TQ_RB_SE': 'Two-qubit spontaneous emission',
         'Memory_RB': 'Memory error',
         'Measurement_crosstalk': 'Measurement crosstalk error',
-        'Reset_crosstalk': 'Reset crosstalk error',
         'SPAM': 'SPAM error'
     }
+    df_raw = extract_parameters(data_dir, machine, date, test_list)
+
+    df = {}
+    for old_name, new_name in renamed.items():
+        if old_name in df_raw:
+            df[new_name] = ['{:.1uePS}'.format(ufloat(df_raw[old_name][0], df_raw[old_name][1]))]
+        else:
+            df[new_name] = None
+    result = pd.DataFrame.from_dict(df).transpose()
+    result.rename(columns={0: 'Error magnitude'}, inplace=True)
+    # pd.set_option('display.float_format', lambda x: '%.3E' % x)
+
+    return result
+
+
+def emulator_parameters(data_dir: str, machine: str, date: str):
+    ''' Make dictionary of emulator parameters from all tests. '''
+
+    renamed = {
+        'SQ_RB': 'p1',
+        'SQ_RB_SE': 'p1_emission_ratio',
+        'TQ_RB': 'p2',
+        'TQ_RB_SE': 'p2_emission_ratio',
+        'Memory_RB': 'dephasing_error',
+        'Measurement_crosstalk': 'p_crosstalk_meas',
+        'Reset_crosstalk': 'p_crosstalk_init',
+        'SPAM0': 'p_meas_0',
+        'SPAM1': 'p_meas_1'
+    }
+    df_raw = extract_parameters(data_dir, machine, date)
+
+    df = {}
+    for old_name, new_name in renamed.items():
+        if 'SE' in old_name and 'SQ' in old_name:
+            if old_name in df_raw:
+                df[new_name] = first_sig_fig(df_raw[old_name][0]/df_raw['SQ_RB'][0], df_raw[old_name][1]/df_raw['SQ_RB'][0])
+            else:
+                df[new_name] = None
+        elif 'SE' in old_name and 'TQ' in old_name:
+            if old_name in df_raw:
+                df[new_name] = first_sig_fig(df_raw[old_name][0]/2/df_raw['TQ_RB'][0]/0.543, df_raw[old_name][1]/2/df_raw['TQ_RB'][0]/0.543)
+            else:
+                df[new_name] = None
+        else:
+            if old_name in df_raw:
+                df[new_name] = first_sig_fig(df_raw[old_name][0], df_raw[old_name][1])
+            else:
+                df[new_name] = None
+    
+    return df
+
+
+def extract_parameters(data_dir: str, machine: str, date: str, test_list: list = None):
+    ''' Extract parameters from all tests combined over gate zones. '''
+
+    if test_list is None:
+        test_list = [
+            'SQ_RB',
+            'TQ_RB', 
+            'Memory_RB', 
+            'Measurement_crosstalk', 
+            'SPAM'
+        ]
 
     df = {}
     for test in test_list:
@@ -52,7 +114,7 @@ def combined_report(data_dir: str, machine: str, date: str, test_list: list):
                     test, 
                     'leakage_postselect'
                 )
-                df[renamed[test+'_SE']] = ['{:.1uePS}'.format(ufloat(val_se, unc_se))]
+                df[test+'_SE'] = [val_se, unc_se]
 
             except KeyError:
                 pass
@@ -64,16 +126,25 @@ def combined_report(data_dir: str, machine: str, date: str, test_list: list):
                 test
             )
         elif test == 'SPAM':
-            val, unc = spam_combined(
+            val, unc, res, res_unc = spam_combined(
                 data_dir, 
                 machine, 
                 date, 
                 test
             )
-        df[renamed[test]] = ['{:.1uePS}'.format(ufloat(val, unc))]
+            df[test+'0'] = [1-res['0'], res_unc[0]]
+            df[test+'1'] = [1-res['1'], res_unc[1]]
+        df[test] = [val, unc]
+        
+    return df
 
-    result = pd.DataFrame.from_dict(df).transpose()
-    result.rename(columns={0: 'Error magnitude'}, inplace=True)
-    # pd.set_option('display.float_format', lambda x: '%.3E' % x)
 
-    return result
+def first_sig_fig(val, unc):
+
+    est = '{:.1uE}'.format(ufloat(val, unc))
+
+    vals, pow = est.split('E')
+
+    sig_val = vals.split('+')[0][1:]
+
+    return float(sig_val + 'E' + pow)

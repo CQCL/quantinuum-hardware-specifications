@@ -30,7 +30,7 @@ setuptools.setup(
     name="qtm_spec",
     version='0.1.1',
     author="Quantinuum",
-    author_email="charlie.baldwin@quantinuum.com",
+    author_email="charles.baldwin@quantinuum.com",
     license="Apache 2.0",
     description="Analyze Quantinuum Specification Data",
     long_description=long_description,

@@ -1,4 +1,4 @@
-# Copyright 2023 Quantinuum (www.quantinuum.com)
+# Copyright 2024 Quantinuum (www.quantinuum.com)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -119,7 +119,11 @@ def spam_combined(data_dir: str,
         )
         for i in ['0', '1']
     }
+    res_unc = (
+        np.sqrt(res['0']*(1 - res['0'])/data['shots']), 
+        np.sqrt(res['1']*(1 - res['1'])/data['shots'])
+    )
     fid = (res['0'] + res['1'])/2
     unc = np.sqrt(res['0']*(1 - res['0']) + res['1']*(1 - res['1']))/2/np.sqrt(data['shots']*nqubits)
  
-    return 1 - fid, unc
+    return 1 - fid, unc, res, res_unc
