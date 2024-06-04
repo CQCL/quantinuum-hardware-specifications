@@ -1,6 +1,6 @@
 # Quantinuum Hardware Specifications
 
-This repository contains the data referenced in the Quantinuum H1 Product Data Sheet.
+This repository contains the data referenced in the Quantinuum H1 and H2 Product Data Sheets.
 
 ## Project Organization
 ------------
