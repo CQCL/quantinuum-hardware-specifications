@@ -98,8 +98,10 @@ def errorbar_plot(fid_info: dict,
             pass
 
     ax.legend(legend)
+
+    ax.set_title(f'Data collected on {date.replace("_", "/")}')
     if log_scale:
-        ax.set_xscale("log")
+        ax.set_xscale('log')
 
     if savename:
         fig.savefig(savename + '.svg', format='svg')
