@@ -14,6 +14,7 @@
 
 ''' Functions for plotting RB data from Quantinuum. '''
 
+import datetime
 import pandas as pd
 import numpy as np
 from qtm_spec.util import avg_uncertainty
@@ -98,6 +99,9 @@ def errorbar_plot(fid_info: dict,
             pass
 
     ax.legend(legend)
+
+    current_dt = datetime.datetime.now(datetime.UTC)
+    ax.set_title(f"Data collected on {current_dt.strftime('%d/%m/%Y, %H:%M:%S')} UTC")
     if log_scale:
         ax.set_xscale("log")
 
