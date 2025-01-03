@@ -1,4 +1,4 @@
-# Copyright 2024 Quantinuum (www.quantinuum.com)
+# Copyright 2025 Quantinuum (www.quantinuum.com)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ def report(data_dir: str,
             }
         except KeyError:
             pass
-    elif machine == 'H2-1':
+    elif machine == 'H2-1' or machine == 'H2-2':
         try:
             spam_results = {
                 zone_labels_3[key]: {
