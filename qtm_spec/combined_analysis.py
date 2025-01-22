@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import numpy as np
 import pandas as pd
 from uncertainties import ufloat
 
@@ -25,11 +26,13 @@ def combined_report(data_dir: str, machine: str, date: str, test_list: list):
     ''' Make table of estimates from all methods. '''
 
     renamed = {
-        'SQ_RB': 'Single-qubit gate error',
-        'TQ_RB': 'Two-qubit gate error',
-        'SQ_RB_SE': 'Single-qubit spontaneous emission',
-        'TQ_RB_SE': 'Two-qubit spontaneous emission',
-        'Memory_RB': 'Memory error',
+        'SQ_RB_total': 'Single-qubit gate error',
+        'TQ_RB_total': 'Two-qubit gate error',
+        'SQ_RB_legacy': 'Single-qubit gate error (legacy)',
+        'TQ_RB_legacy': 'Two-qubit gate error (legacy)',
+        'SQ_RB_leakage': 'Single-qubit leakage',
+        'TQ_RB_leakage': 'Two-qubit leakage',
+        'Memory_RB_legacy': 'Memory error',
         'Measurement_crosstalk': 'Measurement crosstalk error',
         'SPAM': 'SPAM error'
     }
@@ -106,15 +109,24 @@ def extract_parameters(data_dir: str, machine: str, date: str, test_list: list =
                 date, 
                 test
             )
+            df[test + '_legacy'] = [val, unc]
             try:
-                val_se, unc_se = rb_analysis_combined(
+                if 'TQ' in test:
+                    dim = 4
+                elif 'SQ' in test:
+                    dim = 2
+                val_leakage, unc_leakage = rb_analysis_combined(
                     data_dir, 
                     machine, 
                     date, 
                     test, 
                     'leakage_postselect'
                 )
-                df[test+'_SE'] = [val_se, unc_se]
+                df[test+'_leakage'] = [val_leakage, unc_leakage]
+                df[test+'_total'] = [
+                    val + val_leakage/dim, 
+                    np.sqrt(unc**2 + unc_leakage**2/dim**2)
+                ]
 
             except KeyError:
                 pass
@@ -125,6 +137,7 @@ def extract_parameters(data_dir: str, machine: str, date: str, test_list: list =
                 date, 
                 test
             )
+            df[test] = [val, unc]
         elif test == 'SPAM':
             val, unc, res, res_unc = spam_combined(
                 data_dir, 
@@ -134,7 +147,7 @@ def extract_parameters(data_dir: str, machine: str, date: str, test_list: list =
             )
             df[test+'0'] = [1-res['0'], res_unc[0]]
             df[test+'1'] = [1-res['1'], res_unc[1]]
-        df[test] = [val, unc]
+            df[test] = [val, unc]
         
     return df
 

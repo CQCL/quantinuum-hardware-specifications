@@ -115,7 +115,7 @@ def report(fid_info: dict,
 
     if data_type == 'survival':
         column0 = 'RB Intercept'
-        column1 = 'Avg. infidelity'
+        column1 = 'Avg. infidelity (legacy)'
     elif data_type == 'leakage_postselect':
         column0 = 'Intercept'
         column1 = 'Spont. emit rate'

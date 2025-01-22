@@ -1,4 +1,4 @@
-# # Copyright 2025 Quantinuum (www.quantinuum.com)
+# Copyright 2025 Quantinuum (www.quantinuum.com)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -149,7 +149,7 @@ def convert_params(fit_params,
     elif data_type == 'leakage_postselect':
         out = [
             fit_params[0],
-            1 - 2*(1 - fit_params[1])/ntq,
+            1 - (1 - fit_params[1])/ntq,
         ]
     return out
 
