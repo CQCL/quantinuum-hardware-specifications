@@ -77,7 +77,7 @@ def errorbar_plot(fid_info: dict,
     ax.set_xlabel("Sequence length (number of measurements)")
     ax.set_ylabel("Success counts")
 
-    if machine == 'H1-1' or (machine == 'H1-2' and int(date.split('_')[0]) > 2022):
+    if machine == 'H1-1' or (machine == 'H1-2' and int(date.split('_')[0]) > 2022) or machine == 'RIKEN':
         try:
             legend = [zone_labels_1[key] for key in legend]
         except KeyError:
@@ -103,10 +103,11 @@ def errorbar_plot(fid_info: dict,
 def report(fid_info: dict, 
            boot_info: dict,
            machine: str,
+           date: str, 
            decay_type: str):
     ''' Returns DataFrame containing summary of results. '''
 
-    if machine == 'H1-1':
+    if machine == 'H1-1' or (machine == 'H1-2' and int(date.split('_')[0]) > 2022) or machine == 'RIKEN':
         try:
             fid_info = {zone_labels_1[key]: fid for key, fid in fid_info.items()}
             boot_info = {zone_labels_1[key]: fid for key, fid in boot_info.items()}
