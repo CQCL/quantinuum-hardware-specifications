@@ -62,8 +62,8 @@ def emulator_parameters(data_dir: str, machine: str, date: str):
         'Memory_RB_legacy': 'dephasing_error',
         'Measurement_crosstalk': 'p_crosstalk_meas',
         'Reset_crosstalk': 'p_crosstalk_init',
-        'SPAM0': 'p_meas_0',
-        'SPAM1': 'p_meas_1'
+        'SPAM0': 'p0_meas',
+        'SPAM1': 'p1_meas'
     }
     df_raw = extract_parameters(data_dir, machine, date)
 

@@ -30,7 +30,7 @@ def report(data_dir: str,
 
     data = load_data(data_dir, machine, date, experiment)
     spam_results = data['survival']
-    if machine == 'H1-1' or (machine == 'H1-2' and int(date.split('_')[0]) > 2022):
+    if machine == 'H1-1' or (machine == 'H1-2' and int(date.split('_')[0]) > 2022) or machine == 'REIMEI':
         try:
             spam_results = {
                 zone_labels_1[key]: {

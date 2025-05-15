@@ -81,7 +81,7 @@ def errorbar_plot(fid_info: dict,
     ax.set_xlabel("Sequence length (number of Cliffords)")
     ax.set_ylabel("Avg. Survival")
 
-    if machine == 'H1-1' or (machine == 'H1-2' and int(date.split('_')[0]) > 2022):
+    if machine == 'H1-1' or (machine == 'H1-2' and int(date.split('_')[0]) > 2022) or machine == 'REIMEI':
         try:
             legend = [zone_labels_1[key] for key in legend]
         except KeyError:
@@ -110,6 +110,7 @@ def errorbar_plot(fid_info: dict,
 def report(fid_info: dict, 
            boot_info: dict,
            machine: str,
+           date: str, 
            data_type: str = 'survival'):
     ''' Returns DataFrame containing summary of results. '''
 
@@ -120,7 +121,7 @@ def report(fid_info: dict,
         column0 = 'Intercept'
         column1 = 'Spont. emit rate'
 
-    if machine == 'H1-1':
+    if machine == 'H1-1' or (machine == 'H1-2' and int(date.split('_')[0]) > 2022) or machine == 'REIMEI':
         try:
             fid_info = {zone_labels_1[key]: fid for key, fid in fid_info.items()}
             boot_info = {zone_labels_1[key]: fid for key, fid in boot_info.items()}
