@@ -26,8 +26,8 @@ def combined_report(data_dir: str, machine: str, date: str, test_list: list):
     ''' Make table of estimates from all methods. '''
 
     renamed = {
-        'SQ_RB_total': 'Single-qubit gate error',
-        'TQ_RB_total': 'Two-qubit gate error',
+        'SQ_RB': 'Single-qubit gate error',
+        'TQ_RB': 'Two-qubit gate error',
         'SQ_RB_legacy': 'Single-qubit gate error (legacy)',
         'TQ_RB_legacy': 'Two-qubit gate error (legacy)',
         'SQ_RB_leakage': 'Single-qubit leakage',
@@ -56,10 +56,10 @@ def emulator_parameters(data_dir: str, machine: str, date: str):
 
     renamed = {
         'SQ_RB': 'p1',
-        'SQ_RB_SE': 'p1_emission_ratio',
+        'SQ_RB_leakage': 'p1_emission_ratio',
         'TQ_RB': 'p2',
-        'TQ_RB_SE': 'p2_emission_ratio',
-        'Memory_RB': 'dephasing_error',
+        'TQ_RB_leakage': 'p2_emission_ratio',
+        'Memory_RB_legacy': 'dephasing_error',
         'Measurement_crosstalk': 'p_crosstalk_meas',
         'Reset_crosstalk': 'p_crosstalk_init',
         'SPAM0': 'p_meas_0',
@@ -69,16 +69,20 @@ def emulator_parameters(data_dir: str, machine: str, date: str):
 
     df = {}
     for old_name, new_name in renamed.items():
-        if 'SE' in old_name and 'SQ' in old_name:
+        if old_name == 'SQ_RB_leakage':
             if old_name in df_raw:
-                df[new_name] = first_sig_fig(df_raw[old_name][0]/df_raw['SQ_RB'][0], df_raw[old_name][1]/df_raw['SQ_RB'][0])
+                df[new_name] = first_sig_fig(2*df_raw[old_name][0]/df_raw['SQ_RB'][0], 2*df_raw[old_name][1]/df_raw['SQ_RB'][0])
             else:
                 df[new_name] = None
-        elif 'SE' in old_name and 'TQ' in old_name:
+        elif old_name == 'TQ_RB_leakage':
             if old_name in df_raw:
-                df[new_name] = first_sig_fig(df_raw[old_name][0]/2/df_raw['TQ_RB'][0]/0.543, df_raw[old_name][1]/2/df_raw['TQ_RB'][0]/0.543)
+                df[new_name] = first_sig_fig(df_raw[old_name][0]/df_raw['TQ_RB'][0]/0.543, df_raw[old_name][1]/df_raw['TQ_RB'][0]/0.543)
             else:
                 df[new_name] = None
+        elif old_name == 'SQ_RB' and 'SQ_RB' not in df_raw:
+            df[new_name] = first_sig_fig(df_raw['SQ_RB_legacy'][0], df_raw['SQ_RB_legacy'][1])
+        elif old_name == 'TQ_RB' and 'TQ_RB' not in df_raw:
+            df[new_name] = first_sig_fig(df_raw['TQ_RB_legacy'][0], df_raw['TQ_RB_legacy'][1])
         else:
             if old_name in df_raw:
                 df[new_name] = first_sig_fig(df_raw[old_name][0], df_raw[old_name][1])
@@ -123,7 +127,7 @@ def extract_parameters(data_dir: str, machine: str, date: str, test_list: list =
                     'leakage_postselect'
                 )
                 df[test+'_leakage'] = [val_leakage, unc_leakage]
-                df[test+'_total'] = [
+                df[test] = [
                     val + val_leakage/dim, 
                     np.sqrt(unc**2 + unc_leakage**2/dim**2)
                 ]
